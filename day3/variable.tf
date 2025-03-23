@@ -24,6 +24,8 @@ variable "subnet_cidr" {
   description = "this cidr block is for the subnet"
 }
 
+
+
 locals {
   getdate = formatdate("YYYYMMDDhhmmss", timestamp())
 }

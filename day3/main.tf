@@ -55,13 +55,14 @@ resource "aws_dynamodb_table" "remote_state_lock" {
 }
 
 resource "aws_instance" "my_linux_vm" {
+  count           = length(aws_subnet.my_subnets)
   ami             = "ami-08b5b3a93ed654d19"
-  subnet_id       = aws_subnet.my_subnet.id
+  subnet_id       = aws_subnet.my_subnets[count.index].id
   security_groups = [aws_security_group.my_sg.id]
   tags = {
-    Name = var.vm_name
+    Name = "Linux_${count.index}_${aws_subnet.my_subnets[count.index].availability_zone}"
   }
-  instance_type = "t3.small"
+  instance_type = "t2.small"
 }
 
 resource "aws_security_group" "my_sg" {
@@ -104,13 +105,18 @@ resource "aws_vpc" "my_vpc" {
 }
 
 
-resource "aws_subnet" "my_subnet" {
-  vpc_id     = aws_vpc.my_vpc.id
-  cidr_block = "10.0.5.0/24"
-
-  tags = {
-    Name = "my_private_subnet"
-  }
+data "aws_availability_zones" "avaliability_zones" {
+  state = "available"
 }
 
 
+resource "aws_subnet" "my_subnets" {
+  vpc_id            = aws_vpc.my_vpc.id
+  count             = length(data.aws_availability_zones.avaliability_zones.names)
+  cidr_block        = cidrsubnet(var.vpc_cidr, 6, count.index)
+  availability_zone = data.aws_availability_zones.avaliability_zones.names[count.index]
+  tags = {
+    Name = "my_subnet_${data.aws_availability_zones.avaliability_zones.names[count.index]}"
+  }
+  ##10.0.0.0/16 > 10.0.1.0/24
+}
